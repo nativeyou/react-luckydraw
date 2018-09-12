@@ -7,14 +7,15 @@ class App extends Component {
         return (
             <div className="App">
                 <LuckDraw
-                    outsideRadius={200}
-                    awards={
+                    awards = {
                         [
-                            {type: 'text', content: 'iphone8'},
-                            {type: 'text', content: '大保健'},
-                            {type: 'text', content: '10元话费'},
-                            {type: 'image', content: 'https://img12.360buyimg.com/n7/jfs/t4807/209/1436278963/496606/8e486549/58f0884eNcec87657.jpg'},
-                            {type: 'losing', content: '未中奖'}
+                            {type: 'text', content: '10积分', backgroundColor: '#FF6766'},
+                            {type: 'text', content: '25积分', backgroundColor: '#FD5757'},
+                            {type: 'text', content: '5积分', backgroundColor: '#FF6766'},
+                            {type: 'text', content: '100积分', backgroundColor: '#FD5757'},
+                            {type: 'text', content: '200积分', backgroundColor: '#FF6766'},
+                            {type: 'text', content: '500积分', backgroundColor: '#FD5757'},
+                            {type: 'losed', content: '未抽中', backgroundColor: '#F79494'}
                         ]
                     }
                 />

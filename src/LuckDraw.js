@@ -3,41 +3,12 @@ import React from 'react';
 export default class LuckDraw extends React.PureComponent {
     constructor(props){
         super(props);
-        this.outsideRadius = props.outsideRadius;
-        this.evenColor = props.evenColor || '#FF6766';
-        this.oddColor = props.oddColor || '#FD5757';
-        this.loseColor = props.loseColor || '#F79494';
-        this.textColor = props.textColor || 'White';
+        this.outsideRadius = 200;  // 半径
+        this.offsetRadian = (Math.PI * 2) / props.awards.length; // 每一个奖品的偏转弧度
 
-        this.arrowColorFrom = props.arrowColorFrom || '#FFFC95';
-        this.arrowColorTo = props.arrowColorTo || '#FF9D37';
-        this.buttonFont = props.buttonFont || '开始抽奖';
-        this.buttonFontColor = props.buttonFontColor || '#88411F';
-        this.buttonColorFrom = props.buttonColorFrom || '#FDC964';
-        this.buttonColorTo = props.buttonColorTo || '#FFCB65';
-
-        this.startRadian = props.startRadian || 0;
-        this.duration = props.duration || 4000;
-        this.velocity = props.velocity || 10;
-
-        this.INSIDE_RADIUS = 0;
-        this.TEXT_RADIAS = this.outsideRadius * .8;
-        this.FONT_STYLE = `bold ${this.outsideRadius * .07}px Helvetica, Arial`;
-
-        this.ARROW_RADIUS = this.outsideRadius / 3;     // 圆盘指针的半径
-        this.BUTTON_RADIUS = this.ARROW_RADIUS * .8;     // 圆盘内部按钮的半径
-
-        this.AWARDS_COUNT = props.awards.length;
-        this.AWARD_RADIAN = (Math.PI * 2) / this.AWARDS_COUNT;
-
-
+        
         this.state = {
-            awards: props.awards,
-            _isAnimate: false,
-            _spinningTime: 0,
-            _spinTotalTime: 0,
-            _spinningChange: 0,
-            _canvasStyle: ''
+            awards: props.awards
         }
     }
 
@@ -45,57 +16,168 @@ export default class LuckDraw extends React.PureComponent {
         this.context = this.refs.canvas.getContext('2d');
         this.centerX = this.refs.canvas.width / 2;
         this.centerY = this.refs.canvas.height / 2;
-        this.renderWheel(this.context);
+        this.drawRouletteWheel();
     }
 
-    renderWheel = (context) => {
-        this._canvasStyle = this.refs.canvas.getAttribute('style');
-        this.drawRouletteWheel(context);
-    };
+    /**
+     * 绘制表盘
+     */
+    drawRouletteWheel(){
+        this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
+        this.context.save();
+        // 绘制圆盘
+        const rgb = '#FD5757'.replace('#', ''),
+            r = parseInt(rgb[0] + rgb[1], 16),
+            g = parseInt(rgb[2] + rgb[3], 16),
+            b = parseInt(rgb[4] + rgb[5], 16);
+        this.context.fillStyle = `rgba(${r}, ${g}, ${b}, .72)`;
+        // this.context.fillStyle = `#333`;
+        this.context.shadowColor = 'rgba(0, 0, 0, .24)';
+        this.context.shadowOffsetX = 0;
+        this.context.shadowOffsetY = 5;
+        this.context.shadowBlur = 15;
+        this.context.arc(this.centerX, this.centerY, this.outsideRadius, 0, Math.PI * 2, false);
+        this.context.fill();
+        this.context.restore();
 
-    drawRouletteWheel = () => {
-
-    };
-
-    finish = () => {
-        this.props.finish && this.props.finish();
-    };
-
-    windowToCanvas = (canvas, e) => {
-        const bbox = canvas.getBoundingClientRect(),
-            x = this.IsPC() ? e.clientX || event.clientX : e.changedTouches[0].clientX,
-            y = this.IsPC() ? e.clientY || event.clientY : e.changedTouches[0].clientY;
-
-        return {
-            x: x - bbox.left,
-            y: y - bbox.top
-        }
-    };
-
-    luckyDraw = (context) => {
-        this._isAnimate = true;
-        this.value = '';
-        this._spinningTime = 0;
-        this._spinTotalTime = Math.random() * 1000 + this.duration;
-        this._spinningChange = Math.random() * 100 + this.velocity;
-        this.rotateWheel(context);
-    };
-
-    touchStartHandle = (e) => {
-        if(!this.state._isAnimate){
-            const loc = this.windowToCanvas(this.props.canvas, e);
+        // --- 根据奖品数绘制内容
+        const awards = this.state.awards;
+        for(let i = 0; i < awards.length; i++) {
+            this.context.save();
+            
+            // 绘制奖品弧度
+            this.context.fillStyle = awards[i].backgroundColor;
+            const _startRadian = 1.5 * Math.PI + this.offsetRadian * i,
+                _endRadian = _startRadian + this.offsetRadian;
             this.context.beginPath();
-            this.context.context.arc(this.centerX, this.centerY, this.BUTTON_RADIUS, 0, Math.PI * 2, false);
-            if (context.isPointInPath(loc.x, loc.y)) {
-                this.luckyDraw(context);
-            }
-        }
-    };
+            this.context.arc(this.centerX, this.centerY, this.outsideRadius - 5, _startRadian, _endRadian, false);
+            this.context.arc(this.centerX, this.centerY, 0, _endRadian, _startRadian, true);
+            this.context.fill();
+            this.context.restore();
 
+            // 绘制文案
+            const content = awards[i].content;
+            this.context.save();
+            this.context.fillStyle = '#ffffff';
+            this.context.font = `bold ${this.outsideRadius * .07}px Helvetica, Arial`;
+            const textX = this.centerX + Math.cos(_startRadian + this.offsetRadian / 2) * this.outsideRadius * .8,
+                textY = this.centerY + Math.sin(_startRadian + this.offsetRadian / 2) * this.outsideRadius * .8;
+            this.context.translate(textX, textY);
+            this.context.rotate(_startRadian + this.offsetRadian / 2 + Math.PI / 2);
+            this.context.fillText(content, - this.context.measureText(content).width / 2, 0)
+            this.context.restore();
+        }
+
+        // 绘制指针 左
+        const moveX = this.centerX,
+            moveY = this.centerY - this.outsideRadius / 3 + 5;
+        this.context.save();
+        this.context.fillStyle = '#FFFC95';
+        this.context.beginPath();
+        this.context.moveTo(moveX, moveY);
+        this.context.lineTo(moveX - 15, moveY);
+        this.context.lineTo(moveX, moveY - 30);
+        this.context.closePath();
+        this.context.fill();
+        this.context.restore();
+
+        // 绘制指针 右
+        this.context.save();
+        this.context.fillStyle = '#FF9D37';
+        this.context.beginPath();
+        this.context.moveTo(moveX, moveY);
+        this.context.lineTo(moveX + 15, moveY);
+        this.context.lineTo(moveX, moveY - 30);
+        this.context.closePath();
+        this.context.fill();
+        this.context.restore();
+
+        // 绘制圆盘
+        const gradientBg = this.context.createLinearGradient(
+            this.centerX - this.outsideRadius / 3, this.centerY - this.outsideRadius / 3,
+            this.centerX - this.outsideRadius / 3, this.centerY + this.outsideRadius / 3
+        );
+        this.context.save();
+        gradientBg.addColorStop(0, '#FFFC95');
+        gradientBg.addColorStop(1, '#FF9D37');
+        this.context.fillStyle = gradientBg;
+
+        this.context.shadowColor = 'rgba(0, 0, 0, .12)';
+        this.context.shadowOffsetX = 0;
+        this.context.shadowOffsetY = 5;
+        this.context.shadowBlur = 15;
+
+        this.context.beginPath();
+        this.context.arc(this.centerX, this.centerY, this.outsideRadius / 3, 0, Math.PI * 2, false);
+        this.context.fill();
+        this.context.restore();
+
+        // 绘制按钮
+        const gradientBtn = this.context.createLinearGradient(
+            this.centerX - this.outsideRadius / 3 * .8, this.centerY - this.outsideRadius / 3 * .8,
+            this.centerX - this.outsideRadius / 3 * .8, this.centerY + this.outsideRadius / 3 * .8
+        );
+        this.context.save();
+        gradientBtn.addColorStop(0, '#FDC964');
+        gradientBtn.addColorStop(1, '#FFCB65');
+        this.context.fillStyle = gradientBtn;
+
+        this.context.beginPath();
+        this.context.arc(this.centerX, this.centerY, this.outsideRadius / 3 * .8, 0, Math.PI * 2, false);
+        this.context.fill();
+        this.context.restore();
+
+        // 绘制文字
+        this.context.save();
+        this.context.fillStyle = '#88411F';
+        this.context.font = `bold ${this.outsideRadius / 3 * .8 / 2}px helvetica`;
+        this.drawText(
+            this.context, 
+            '开始抽奖',
+            this.centerX - this.outsideRadius / 3 * .8 / 2,
+            this.centerY - this.outsideRadius / 3 * .8 / 2 - 4,
+            this.outsideRadius / 3 * .8 * .8,
+            this.outsideRadius / 3 * .8 / 2 + 4
+
+        );
+        this.context.restore();
+    }
+
+    /**
+     * 绘制自动换行的文本
+     * @param {Obj} context
+     * @param {Str} t          文本内容
+     * @param {Num} x          坐标
+     * @param {Num} y          坐标
+     * @param {Num} w          文本限制宽度
+     * @param {Num} lineHeight 行高
+     */
+    drawText(context, t, x, y, w, lineHeight = 20) {
+        let chr = t.split(''),
+            temp = '',           
+            row = [];
+
+        for (let a = 0; a < chr.length; a++){
+            if ( context.measureText(temp).width < w ) {
+                ;
+            }
+            else{
+                row.push(temp);
+                temp = '';
+            }
+            temp += chr[a];
+        };
+
+        row.push(temp);
+
+        for(let b = 0; b < row.length; b++){
+            context.fillText(row[b], x, y + (b + 1) * lineHeight);
+        };
+    };
     render(){
         return (
             <div>
-                <canvas ref="canvas" width='375' height='375' onTouchStart={this.touchStartHandle}>
+                <canvas ref="canvas" width='500' height='500' onTouchStart={this.touchStartHandle}>
                     Canvas not supported
                 </canvas>
             </div>
