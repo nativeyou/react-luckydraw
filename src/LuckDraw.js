@@ -1,11 +1,12 @@
 import React from 'react';
+import * as utils from './utils';
 
 export default class LuckDraw extends React.PureComponent {
     constructor(props){
         super(props);
         this.outsideRadius = 200;  // 半径
         this.offsetRadian = (Math.PI * 2) / props.awards.length; // 每一个奖品的偏转弧度
-
+        this.BUTTON_RADIUS = this.outsideRadius / 3 * .8;
         
         this.state = {
             awards: props.awards
@@ -25,7 +26,7 @@ export default class LuckDraw extends React.PureComponent {
     drawRouletteWheel(){
         this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
         this.context.save();
-        // 绘制圆盘
+        // ------ 绘制圆盘
         const rgb = '#FD5757'.replace('#', ''),
             r = parseInt(rgb[0] + rgb[1], 16),
             g = parseInt(rgb[2] + rgb[3], 16),
@@ -39,13 +40,14 @@ export default class LuckDraw extends React.PureComponent {
         this.context.arc(this.centerX, this.centerY, this.outsideRadius, 0, Math.PI * 2, false);
         this.context.fill();
         this.context.restore();
+        // ------
 
-        // --- 根据奖品数绘制内容
+        // ------ 根据奖品数绘制内容
         const awards = this.state.awards;
         for(let i = 0; i < awards.length; i++) {
             this.context.save();
             
-            // 绘制奖品弧度
+            // ------ 绘制奖品弧度
             this.context.fillStyle = awards[i].backgroundColor;
             const _startRadian = 1.5 * Math.PI + this.offsetRadian * i,
                 _endRadian = _startRadian + this.offsetRadian;
@@ -54,6 +56,7 @@ export default class LuckDraw extends React.PureComponent {
             this.context.arc(this.centerX, this.centerY, 0, _endRadian, _startRadian, true);
             this.context.fill();
             this.context.restore();
+            // ------
 
             // 绘制文案
             const content = awards[i].content;
@@ -67,8 +70,9 @@ export default class LuckDraw extends React.PureComponent {
             this.context.fillText(content, - this.context.measureText(content).width / 2, 0)
             this.context.restore();
         }
+        // ------
 
-        // 绘制指针 左
+        // ------ 绘制指针 左
         const moveX = this.centerX,
             moveY = this.centerY - this.outsideRadius / 3 + 5;
         this.context.save();
@@ -80,8 +84,9 @@ export default class LuckDraw extends React.PureComponent {
         this.context.closePath();
         this.context.fill();
         this.context.restore();
+        // ------
 
-        // 绘制指针 右
+        // ------ 绘制指针 右
         this.context.save();
         this.context.fillStyle = '#FF9D37';
         this.context.beginPath();
@@ -91,8 +96,9 @@ export default class LuckDraw extends React.PureComponent {
         this.context.closePath();
         this.context.fill();
         this.context.restore();
+        // ------
 
-        // 绘制圆盘
+        // ------ 绘制圆盘
         const gradientBg = this.context.createLinearGradient(
             this.centerX - this.outsideRadius / 3, this.centerY - this.outsideRadius / 3,
             this.centerX - this.outsideRadius / 3, this.centerY + this.outsideRadius / 3
@@ -111,11 +117,12 @@ export default class LuckDraw extends React.PureComponent {
         this.context.arc(this.centerX, this.centerY, this.outsideRadius / 3, 0, Math.PI * 2, false);
         this.context.fill();
         this.context.restore();
+        // ------
 
-        // 绘制按钮
+        // ------ 绘制按钮
         const gradientBtn = this.context.createLinearGradient(
-            this.centerX - this.outsideRadius / 3 * .8, this.centerY - this.outsideRadius / 3 * .8,
-            this.centerX - this.outsideRadius / 3 * .8, this.centerY + this.outsideRadius / 3 * .8
+            this.centerX - this.BUTTON_RADIUS, this.centerY - this.BUTTON_RADIUS,
+            this.centerX - this.BUTTON_RADIUS, this.centerY + this.BUTTON_RADIUS
         );
         this.context.save();
         gradientBtn.addColorStop(0, '#FDC964');
@@ -123,61 +130,54 @@ export default class LuckDraw extends React.PureComponent {
         this.context.fillStyle = gradientBtn;
 
         this.context.beginPath();
-        this.context.arc(this.centerX, this.centerY, this.outsideRadius / 3 * .8, 0, Math.PI * 2, false);
+        this.context.arc(this.centerX, this.centerY, this.BUTTON_RADIUS, 0, Math.PI * 2, false);
         this.context.fill();
         this.context.restore();
+        // ------
 
-        // 绘制文字
+        // ------ 绘制文字
         this.context.save();
         this.context.fillStyle = '#88411F';
-        this.context.font = `bold ${this.outsideRadius / 3 * .8 / 2}px helvetica`;
-        this.drawText(
+        this.context.font = `bold ${this.BUTTON_RADIUS / 2}px helvetica`;
+        utils.drawText(
             this.context, 
             '开始抽奖',
-            this.centerX - this.outsideRadius / 3 * .8 / 2,
-            this.centerY - this.outsideRadius / 3 * .8 / 2 - 4,
-            this.outsideRadius / 3 * .8 * .8,
-            this.outsideRadius / 3 * .8 / 2 + 4
+            this.centerX - this.BUTTON_RADIUS / 2,
+            this.centerY - this.BUTTON_RADIUS / 2 - 4,
+            this.BUTTON_RADIUS * .8,
+            this.BUTTON_RADIUS / 2 + 4
 
         );
+        // ------
         this.context.restore();
     }
 
-    /**
-     * 绘制自动换行的文本
-     * @param {Obj} context
-     * @param {Str} t          文本内容
-     * @param {Num} x          坐标
-     * @param {Num} y          坐标
-     * @param {Num} w          文本限制宽度
-     * @param {Num} lineHeight 行高
-     */
-    drawText(context, t, x, y, w, lineHeight = 20) {
-        let chr = t.split(''),
-            temp = '',           
-            row = [];
-
-        for (let a = 0; a < chr.length; a++){
-            if ( context.measureText(temp).width < w ) {
-                ;
-            }
-            else{
-                row.push(temp);
-                temp = '';
-            }
-            temp += chr[a];
-        };
-
-        row.push(temp);
-
-        for(let b = 0; b < row.length; b++){
-            context.fillText(row[b], x, y + (b + 1) * lineHeight);
-        };
+    mouseMoveHandle = (e) => {
+        const loc = utils.windowToCanvas(this.refs.canvas, e);
+        this.context.beginPath();
+        this.context.arc(this.centerX, this.centerY, this.BUTTON_RADIUS, 0, Math.PI * 2, false);
+        if(this.context.isPointInPath(loc.x, loc.y)) {
+            this.refs.canvas.setAttribute('style', `cursor: pointer;`)
+        } else {
+            this.refs.canvas.setAttribute('style', '')
+        }
     };
+
+    beginRotateHandle = () => {
+
+    };
+
     render(){
         return (
             <div>
-                <canvas ref="canvas" width='500' height='500' onTouchStart={this.touchStartHandle}>
+                <canvas
+                    ref="canvas"
+                    width='500'
+                    height='500'
+                    onMouseMove={this.mouseMoveHandle}
+                    onTouchStart={this.beginRotateHandle}
+                    onMouseDown={this.beginRotateHandle}
+                >
                     Canvas not supported
                 </canvas>
             </div>
